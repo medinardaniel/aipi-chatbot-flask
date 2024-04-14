@@ -6,7 +6,6 @@ import json
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
-from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
