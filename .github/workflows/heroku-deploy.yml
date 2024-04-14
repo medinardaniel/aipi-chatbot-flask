@@ -29,3 +29,9 @@ jobs:
         heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
         heroku_email: ${{ secrets.HEROKU_EMAIL }}
         usedocker: false
+        heroku_config_vars: |
+          MONGODB_URI=${{ secrets.MONGODB_URI }}
+          MODEL_API_URL=${{ secrets.MODEL_API_URL }}
+          EMBEDDINGS_API_URL=${{ secrets.EMBEDDINGS_API_URL }}
+          MODEL_API_KEY=${{ secrets.MODEL_API_KEY }}
+          EMBEDDINGS_API_KEY=${{ secrets.EMBEDDINGS_API_KEY }}
