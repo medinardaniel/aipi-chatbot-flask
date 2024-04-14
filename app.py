@@ -11,12 +11,22 @@ from sentence_transformers import SentenceTransformer
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/process": {"origins": "http://localhost:3000"}})  # Enable CORS for the /process route
+# Set the origins to the domains provided by Vercel
+origins = [
+    "http://localhost:3000",
+    "https://aipi-chatbot-frontend-daniels-projects-a44d4a0e.vercel.app",
+    "https://aipi-chatbot-frontend-git-main-daniels-projects-a44d4a0e.vercel.app",
+    "https://aipi-chatbot-frontend.vercel.app",
+]
+
+CORS(app, resources={r"/process": {"origins": origins}})
 
 # Environment variables (Normally these should be securely stored)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 MONGODB_URI = os.getenv("MONGODB_URI")
-API_URL = os.getenv("API_URL")
+MODEL_API_URL = os.getenv("MODEL_API_URL")
+EMBEDDINGS_API_URL = os.getenv("EMBEDDINGS_API_URL")
+MODEL_API_KEY = os.getenv("MODEL_API_KEY")
+EMBEDDINGS_API_KEY = os.getenv("EMBEDDINGS_API_KEY")
 
 # Initialize MongoDB client
 ca = certifi.where()
@@ -24,20 +34,27 @@ mongo_client = MongoClient(MONGODB_URI, tlsCAFile=ca)
 db = mongo_client['Chatbot']
 collection = db['Duke2']
 
-# Initialize OpenAI client
-embedding_model = SentenceTransformer("avsolatorio/GIST-large-Embedding-v0")
-
-def embed_message(user_message):
+def embed_message(payload):
     """
-    embeds the user_message using Gist.
+    Sends a request to the specified Hugging Face model API and returns the response.
+    :param payload: The data to send in the request.
+    :return: The JSON response from the API.
+    """
+    emb_headers = {
+        "Accept": "application/json",
+        "Authorization": "Bearer " + EMBEDDINGS_API_KEY,
+        "Content-Type": "application/json"
+    }
+    response = requests.post(EMBEDDINGS_API_URL, headers=emb_headers, json=payload)
+    return response.json()['embeddings']
     
-    :param user_message: The user message to embed. Type string.
-    :return: The embedded message. Type list.
-    """
-    message_embedding = embedding_model.encode([user_message], convert_to_tensor=True).tolist()[0]
-    return message_embedding
-
 def find_similar_chunks(embedded_message, max_results=3):
+    """
+    Find similar chunks in the MongoDB collection based on the embedded message.
+    :param embedded_message: The embedded message to use for the search.
+    :param max_results: The maximum number of results to return.
+    :return: A list of similar chunks.
+    """
     query = [
         {
             "$vectorSearch": {
@@ -56,18 +73,29 @@ def find_similar_chunks(embedded_message, max_results=3):
     return chunks
 
 def query_huggingface_model(payload):
-    headers = {
+    """
+    Send request to Hugging Face model API and return the response.
+    :param payload: The data to send in the request.
+    :return: The JSON response from the API.
+    """
+    model_headers = {
         "Accept": "application/json",
+        "Authorization": "Bearer " + MODEL_API_KEY,
         "Content-Type": "application/json"
     }
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+        response = requests.post(MODEL_API_URL, headers=model_headers, json=payload)
         return response.json()  # This should be a dictionary
     except Exception as e:
         print(f"Failed to get response from Hugging Face model: {str(e)}")
         return {"error": str(e)}
 
 def extract_response(text):
+    """
+    Extract the response from the text returned by the Hugging Face model.
+    :param text: The text returned by the Hugging Face model.
+    :return: The response extracted from the text.
+    """
     # Find the position of the marker "### Response:"
     marker = "### Response:"
     start_index = text.find(marker)
@@ -87,26 +115,33 @@ def extract_response(text):
 def process_request():
     # Extract message from the request
     message = request.json.get("message", "")
-    print(message)
+
+    payload = {
+	"inputs": message,
+	"parameters": {}
+    }
 
     # Step 1: Get embedding
-    embedding = embed_message(message)
+    embedding = embed_message(payload)
 
     # Step 2: Retrieve similar chunks from MongoDB
     similar_chunks = find_similar_chunks(embedding)
 
     # Step 3: Call HuggingFace model
     if similar_chunks:
-        print(similar_chunks)
         # Assuming we use the text from the first similar chunk
         model_input = similar_chunks[0] + " " + message
-        huggingface_response = query_huggingface_model({"inputs": model_input})
-        print(huggingface_response)
+        print('model input:', model_input)
+        huggingface_response = query_huggingface_model({
+                                                        "inputs": model_input,
+                                                        "temp": 0.6
+                                                        })
+        print('huggingface response:', huggingface_response)
         text_response = extract_response(huggingface_response)
-        print(text_response)
-        return jsonify(text_response), 200
+        print('text response:', text_response)
+        return jsonify(huggingface_response), 200
     else:
         return jsonify({"message": "No similar chunks found."}), 404
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
