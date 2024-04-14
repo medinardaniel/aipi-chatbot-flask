@@ -1,10 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
-import pymongo
 import certifi
 import requests
 import json
-import openai
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
@@ -69,11 +67,27 @@ def query_huggingface_model(payload):
         print(f"Failed to get response from Hugging Face model: {str(e)}")
         return {"error": str(e)}
 
+def extract_response(text):
+    # Find the position of the marker "### Response:"
+    marker = "### Response:"
+    start_index = text.find(marker)
+    
+    # If the marker is not found, return an empty string
+    if start_index == -1:
+        return ""
+    
+    # Add the length of the marker to start index to find the start of the response
+    start_of_response = start_index + len(marker)
+    
+    # Extract and return the text following the marker
+    return text[start_of_response:].strip()
+
 @app.route('/process', methods=['POST'])
 @cross_origin()
 def process_request():
     # Extract message from the request
     message = request.json.get("message", "")
+    print(message)
 
     # Step 1: Get embedding
     embedding = embed_message(message)
@@ -83,10 +97,14 @@ def process_request():
 
     # Step 3: Call HuggingFace model
     if similar_chunks:
+        print(similar_chunks)
         # Assuming we use the text from the first similar chunk
         model_input = similar_chunks[0] + " " + message
         huggingface_response = query_huggingface_model({"inputs": model_input})
-        return jsonify(huggingface_response), 200
+        print(huggingface_response)
+        text_response = extract_response(huggingface_response)
+        print(text_response)
+        return jsonify(text_response), 200
     else:
         return jsonify({"message": "No similar chunks found."}), 404
 
