@@ -6,6 +6,7 @@ import json
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
+import re
 
 load_dotenv()
 
@@ -90,18 +91,18 @@ def query_huggingface_model(payload):
         print(f"Failed to get response from Hugging Face model: {str(e)}")
         return {"error": str(e)}
 
-def extract_response(text):
+def postprocess_response(text):
     """
-    Prune all characters after the very last period in the text.
+    Prune all characters after the very last period in the text, including the number before the period if it exists.
     
     :param text: The text returned by the Hugging Face model.
-    :return: The response extracted from the text, pruned after the last period.
+    :return: The response extracted from the text, pruned after the last period including the number before the period if it exists.
     """
     # Find the last period in the response text
-    last_period_index = text.rfind('.')
-    # Prune the response text after the last period
-    if last_period_index != -1:
-        text = text[:last_period_index + 1]  # Include the period itself
+    match = re.search(r'\d*\.\s*\d*$', text)
+    if match:
+        # Prune the response text after the last period, including the number before the period if it exists
+        text = text[:match.start()]
 
     return text
 
@@ -137,7 +138,7 @@ def process_request():
         print('huggingface response:', huggingface_response)
         if "error" in huggingface_response:
             return jsonify({"message": "An error occurred while processing the request. Please try again in a few seconds."}), 200
-        text_response = extract_response(huggingface_response)
+        text_response = postprocess_response(huggingface_response)
         print('text response:', text_response)
         return jsonify(text_response), 200
     else:
