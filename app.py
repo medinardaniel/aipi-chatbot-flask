@@ -32,6 +32,7 @@ ca = certifi.where()
 mongo_client = MongoClient(MONGODB_URI, tlsCAFile=ca)
 db = mongo_client['Chatbot']
 collection = db['Duke4']
+index_name = 'Duke4_index'
 
 def embed_message(payload):
     """
@@ -57,7 +58,7 @@ def find_similar_chunks(embedded_message, max_results=3):
     query = [
         {
             "$vectorSearch": {
-                "index": "gist_index",
+                "index": index_name,
                 "path": "embedding",
                 "queryVector": embedded_message,
                 "numCandidates": 20,
