@@ -92,25 +92,13 @@ def query_huggingface_model(payload):
 
 def extract_response(text):
     """
-    Extract the response from the text returned by the Hugging Face model.
-    Additionally, prune all characters after the very last period in the extracted response.
+    Prune all characters after the very last period in the text.
     
     :param text: The text returned by the Hugging Face model.
     :return: The response extracted from the text, pruned after the last period.
     """
-    # Find the position of the marker "### Response:"
-    marker = "### Response:"
-    start_index = text.find(marker)
-    # If the marker is not found, return an empty string
-    if start_index == -1:
-        return ""
-    # Add the length of the marker to start index to find the start of the response
-    start_of_response = start_index + len(marker)
-    
-    # Extract the text following the marker
-    response_text = text[start_of_response:].strip()
     # Find the last period in the response text
-    last_period_index = response_text.rfind('.')
+    last_period_index = text.rfind('.')
     # Prune the response text after the last period
     if last_period_index != -1:
         response_text = response_text[:last_period_index + 1]  # Include the period itself
@@ -151,7 +139,7 @@ def process_request():
             return jsonify({"message": "An error occurred while processing the request. Please try again in a few seconds."}), 200
         text_response = extract_response(huggingface_response)
         print('text response:', text_response)
-        return jsonify(huggingface_response), 200
+        return jsonify(text_response), 200
     else:
         return jsonify({"message": "No similar chunks found."}), 404
 
