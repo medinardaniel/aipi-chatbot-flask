@@ -31,7 +31,7 @@ EMBEDDINGS_API_KEY = os.getenv("EMBEDDINGS_API_KEY")
 ca = certifi.where()
 mongo_client = MongoClient(MONGODB_URI, tlsCAFile=ca)
 db = mongo_client['Chatbot']
-collection = db['Duke2']
+collection = db['Duke3']
 
 def embed_message(payload):
     """
@@ -57,7 +57,7 @@ def find_similar_chunks(embedded_message, max_results=3):
     query = [
         {
             "$vectorSearch": {
-                "index": "vector_index2",
+                "index": "gist_index",
                 "path": "embedding",
                 "queryVector": embedded_message,
                 "numCandidates": 20,
