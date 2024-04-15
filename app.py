@@ -101,9 +101,9 @@ def extract_response(text):
     last_period_index = text.rfind('.')
     # Prune the response text after the last period
     if last_period_index != -1:
-        response_text = response_text[:last_period_index + 1]  # Include the period itself
+        text = text[:last_period_index + 1]  # Include the period itself
 
-    return response_text
+    return text
 
 
 @app.route('/process', methods=['POST'])
