@@ -77,7 +77,6 @@ def query_huggingface_model(payload):
     :param payload: The data to send in the request.
     :return: The JSON response from the API.
     """
-    print('MODEL_API_URL:', MODEL_API_URL)
     model_headers = {
         "Accept": "application/json",
         "Authorization": "Bearer " + MODEL_API_KEY,
