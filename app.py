@@ -31,7 +31,7 @@ EMBEDDINGS_API_KEY = os.getenv("EMBEDDINGS_API_KEY")
 ca = certifi.where()
 mongo_client = MongoClient(MONGODB_URI, tlsCAFile=ca)
 db = mongo_client['Chatbot']
-collection = db['Duke3']
+collection = db['Duke4']
 
 def embed_message(payload):
     """
