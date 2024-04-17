@@ -94,30 +94,32 @@ def query_huggingface_model(payload):
 def postprocess_response(text):
     """
     Prune all characters after the very last period in the text, including the number before the period if it exists,
-    ensuring that any residual periods without proper ending are also removed if they do not form a complete sentence.
+    ensuring proper handling of sentences ending with class numbers or similar patterns without incorrectly identifying
+    them as trailing numbers meant for pruning.
     
     :param text: The text returned by the Hugging Face model.
     :return: The response extracted from the text, pruned after the last period including the number before the period if it exists.
     """
-    # Find the last period and any immediately preceding numbers
-    match = re.search(r'\d*\.\s*\d*$', text)
+    # Regex to find the last number-period-number sequence at the end of the text
+    match = re.search(r'\d+\.\s*\d+$', text)
     if match:
-        # Prune the response text after the last period, including the number before the period if it exists
+        # Prune the text after this match
         text = text[:match.start()]
     else:
-        # If no trailing digits are found, find the last period and trim after that
+        # Find the last period that is not part of a sequence like "ECE 564."
         last_period_index = text.rfind('.')
         if last_period_index != -1:
-            # Check for digits immediately before the period
-            preceding_text = text[:last_period_index].rstrip()
-            match_preceding = re.search(r'\d+$', preceding_text)
-            if match_preceding:
-                text = preceding_text[:match_preceding.start()]
-            else:
+            # Ensure the period is followed by space or is at the end to confirm it's a sentence end
+            if last_period_index == len(text) - 1 or text[last_period_index + 1].isspace():
                 text = text[:last_period_index + 1]
+            else:
+                # If it's not a clear sentence end, trim to the last clear sentence end
+                preceding_text = text[:last_period_index].rstrip()
+                last_clear_period_index = preceding_text.rfind('.')
+                if last_clear_period_index != -1:
+                    text = preceding_text[:last_clear_period_index + 1]
 
     return text.strip()
-
 
 @app.route('/process', methods=['POST'])
 @cross_origin()
