@@ -124,14 +124,16 @@ def postprocess_response(text):
 def process_request():
     # Extract message from the request
     message = request.json.get("message", "")
+    print(message)
 
     emb_payload = {
-	"inputs": message,
-	"parameters": {}
+        "inputs": message,
+        "parameters": {}
     }
 
     # Step 1: Get embedding
     embedding = embed_message(emb_payload)
+    print(embedding)
     if "error" in embedding:
         return jsonify({"message": "Booting up. Please try again in a few seconds."}), 200
 
