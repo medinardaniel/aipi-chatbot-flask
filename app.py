@@ -47,7 +47,7 @@ def embed_message(payload):
         "Content-Type": "application/json"
     }
     response = requests.post(EMBEDDINGS_API_URL, headers=emb_headers, json=payload)
-    return response.json()['embeddings']
+    return response.json()
     
 def find_similar_chunks(embedded_message, max_results=3):
     """
@@ -91,14 +91,6 @@ def query_huggingface_model(payload):
         print(f"Failed to get response from Hugging Face model: {str(e)}")
         return {"error": str(e)}
 
-def handle_sleeping_endpoint():
-    """
-    Handle the sleeping endpoint.
-    :return: A JSON response indicating that the server is awake.
-    """
-
-    return jsonify({"message": "Booting up the server. Please try again in a few seconds."}), 200
-
 def postprocess_response(text):
     """
     Prune all characters after the very last period in the text, including the number before the period if it exists,
@@ -141,10 +133,10 @@ def process_request():
     # Step 1: Get embedding
     embedding = embed_message(emb_payload)
     if "error" in embedding:
-        return jsonify({"message": "Booting up the server. Please try again in a few seconds."}), 200
+        return jsonify({"message": "Booting up. Please try again in a few seconds."}), 200
 
     # Step 2: Retrieve similar chunks from MongoDB
-    similar_chunks = find_similar_chunks(embedding)
+    similar_chunks = find_similar_chunks(embedding['embeddings'])
 
     # Step 3: Call HuggingFace model
     if similar_chunks:
@@ -159,7 +151,7 @@ def process_request():
         huggingface_response = query_huggingface_model(model_payload)
         print('huggingface response:', huggingface_response)
         if "error" in huggingface_response:
-            return jsonify({"message": "Booting up the server. Please try again in a few seconds."}), 200
+            return jsonify({"message": "Booting up. Please try again in a few seconds."}), 200
         text_response = postprocess_response(huggingface_response)
         return jsonify(text_response), 200
     else:
