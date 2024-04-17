@@ -133,7 +133,8 @@ def process_request():
 
     # Step 1: Get embedding
     response = embed_message(emb_payload)
-    print(response)
+    print('response', response)
+    print('response status code:', response.status_code)
     if response.status_code != 200:
         return jsonify({"message": "Booting up. Please try again in a few seconds."}), 200
 
