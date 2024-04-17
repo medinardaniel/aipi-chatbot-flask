@@ -91,20 +91,40 @@ def query_huggingface_model(payload):
         print(f"Failed to get response from Hugging Face model: {str(e)}")
         return {"error": str(e)}
 
+def handle_sleeping_endpoint():
+    """
+    Handle the sleeping endpoint.
+    :return: A JSON response indicating that the server is awake.
+    """
+
+    return jsonify({"message": "Booting up the server. Please try again in a few seconds."}), 200
+
 def postprocess_response(text):
     """
-    Prune all characters after the very last period in the text, including the number before the period if it exists.
+    Prune all characters after the very last period in the text, including the number before the period if it exists,
+    ensuring that any residual periods without proper ending are also removed if they do not form a complete sentence.
     
     :param text: The text returned by the Hugging Face model.
     :return: The response extracted from the text, pruned after the last period including the number before the period if it exists.
     """
-    # Find the last period in the response text
+    # Find the last period and any immediately preceding numbers
     match = re.search(r'\d*\.\s*\d*$', text)
     if match:
         # Prune the response text after the last period, including the number before the period if it exists
         text = text[:match.start()]
+    else:
+        # If no trailing digits are found, find the last period and trim after that
+        last_period_index = text.rfind('.')
+        if last_period_index != -1:
+            # Check for digits immediately before the period
+            preceding_text = text[:last_period_index].rstrip()
+            match_preceding = re.search(r'\d+$', preceding_text)
+            if match_preceding:
+                text = preceding_text[:match_preceding.start()]
+            else:
+                text = text[:last_period_index + 1]
 
-    return text
+    return text.strip()
 
 
 @app.route('/process', methods=['POST'])
@@ -120,6 +140,8 @@ def process_request():
 
     # Step 1: Get embedding
     embedding = embed_message(emb_payload)
+    if "error" in embedding:
+        return jsonify({"message": "Booting up the server. Please try again in a few seconds."}), 200
 
     # Step 2: Retrieve similar chunks from MongoDB
     similar_chunks = find_similar_chunks(embedding)
@@ -137,9 +159,8 @@ def process_request():
         huggingface_response = query_huggingface_model(model_payload)
         print('huggingface response:', huggingface_response)
         if "error" in huggingface_response:
-            return jsonify({"message": "An error occurred while processing the request. Please try again in a few seconds."}), 200
+            return jsonify({"message": "Booting up the server. Please try again in a few seconds."}), 200
         text_response = postprocess_response(huggingface_response)
-        print('text response:', text_response)
         return jsonify(text_response), 200
     else:
         return jsonify({"message": "No similar chunks found."}), 404
