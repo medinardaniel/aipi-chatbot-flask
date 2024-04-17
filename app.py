@@ -153,8 +153,9 @@ def process_request():
         huggingface_response = query_huggingface_model(model_payload)
         print('huggingface response:', huggingface_response)
         if 'error' in huggingface_response:
-            return jsonify({"Booting up. Please try again in a few seconds."}), 200
-        text_response = postprocess_response(huggingface_response)
+            text_response = "Booting up. Please try again in a few seconds."
+        else:
+            text_response = postprocess_response(huggingface_response)
         return jsonify(text_response), 200
     else:
         return jsonify({"Sorry, I'm unable to answer that question at the moment."}), 200
