@@ -124,7 +124,6 @@ def postprocess_response(text):
 def process_request():
     # Extract message from the request
     message = request.json.get("message", "")
-    print(message)
 
     emb_payload = {
         "inputs": message,
@@ -133,8 +132,6 @@ def process_request():
 
     # Step 1: Get embedding
     response = embed_message(emb_payload)
-    print('response', response)
-    print('response status code:', response.status_code)
     if response.status_code != 200:
         return jsonify({"Booting up. Please try again in a few seconds."}), 200
 
@@ -153,7 +150,7 @@ def process_request():
             }
         huggingface_response = query_huggingface_model(model_payload)
         print('huggingface response:', huggingface_response)
-        if "error" in huggingface_response:
+        if 'error' in huggingface_response:
             return jsonify({"Booting up. Please try again in a few seconds."}), 200
         text_response = postprocess_response(huggingface_response)
         return jsonify(text_response), 200
