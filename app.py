@@ -137,7 +137,6 @@ def process_request():
     print('response status code:', response.status_code)
     if response.status_code != 200:
         return jsonify({"Booting up. Please try again in a few seconds."}), 200
-    print('here')
 
     # Step 2: Retrieve similar chunks from MongoDB
     similar_chunks = find_similar_chunks(response.json()['embeddings'])
