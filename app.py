@@ -136,7 +136,7 @@ def process_request():
     print('response', response)
     print('response status code:', response.status_code)
     if response.status_code != 200:
-        return jsonify({"message": "Booting up. Please try again in a few seconds."}), 200
+        return jsonify({"Booting up. Please try again in a few seconds."}), 200
     print('here')
 
     # Step 2: Retrieve similar chunks from MongoDB
@@ -155,11 +155,11 @@ def process_request():
         huggingface_response = query_huggingface_model(model_payload)
         print('huggingface response:', huggingface_response)
         if "error" in huggingface_response:
-            return jsonify({"message": "Booting up. Please try again in a few seconds."}), 200
+            return jsonify({"Booting up. Please try again in a few seconds."}), 200
         text_response = postprocess_response(huggingface_response)
         return jsonify(text_response), 200
     else:
-        return jsonify({"message": "No similar chunks found."}), 404
+        return jsonify({"Sorry, I'm unable to answer that question at the moment."}), 200
 
 if __name__ == '__main__':
     app.run()
