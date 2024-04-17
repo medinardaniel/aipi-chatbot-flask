@@ -47,7 +47,7 @@ def embed_message(payload):
         "Content-Type": "application/json"
     }
     response = requests.post(EMBEDDINGS_API_URL, headers=emb_headers, json=payload)
-    return response.json()
+    return response
     
 def find_similar_chunks(embedded_message, max_results=3):
     """
@@ -132,13 +132,13 @@ def process_request():
     }
 
     # Step 1: Get embedding
-    embedding = embed_message(emb_payload)
-    print(embedding)
-    if "error" in embedding:
+    response = embed_message(emb_payload)
+    print(response)
+    if response.status_code != 200:
         return jsonify({"message": "Booting up. Please try again in a few seconds."}), 200
 
     # Step 2: Retrieve similar chunks from MongoDB
-    similar_chunks = find_similar_chunks(embedding['embeddings'])
+    similar_chunks = find_similar_chunks(response.json()['embeddings'])
 
     # Step 3: Call HuggingFace model
     if similar_chunks:
